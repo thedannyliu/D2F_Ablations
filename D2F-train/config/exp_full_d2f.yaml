@@ -1,10 +1,13 @@
+# Experiment: Full D2F
+# Complete D2F implementation with all components
+
 # Training mode configuration
-training_mode: 'dream'  # 'llada' or 'dream'
+training_mode: 'dream'
 
 # Model and data path configuration
 paths:
   model: '/scratch/dannyliu/.cache/huggingface/hub/models--Dream-org--Dream-v0-Base-7B'
-  experiment: 'ckpt_dream_base'
+  experiment: './experiments/ablation'
   data:
     bs: 'Lansechen/bs17k_collection_filtered_hard_maxlength600'
     bs_easy: 'Lansechen/bs17k_collection_filtered_easy_maxlength600'
@@ -28,32 +31,32 @@ denoiser:
       num_heads: 32
 
 train:
-  # Will use paths.experiment path
   decoder_resume_path:
   head_resume_path:
   skipped_keys:
   global_step:
-  exp_name: &exp_name 'ddt_test'
-  wandb_proj: *exp_name
-  output_dir: 'ddt_test'
+  exp_name: &exp_name 'full_d2f_complete'
+  wandb_proj: 'ablation_study'
+  output_dir: 'full_d2f_complete'
   logging_dir: 'logs'
-  mixed_precision: 'fp16'
-  gradient_accumulation_steps: 5
+  mixed_precision: 'bf16'
+  gradient_accumulation_steps: 4
   report_to: 'wandb'
   block_size: 16 
   
   lr: 5e-6
   num_iters: 50000
-  eval_every: 100000
-  save_every: 1000
+  eval_every: 1000
+  save_every: 2000
 
-  enable_shift: true
-  share_steps: 2
-  self_align: true
+  # Full D2F configuration
+  enable_shift: true           # Enable logit shifting
+  share_steps: 2              # Multi-step training
+  self_align: true            # Enable asymmetric distillation
   feature_align: false
   self_step: true
 
 data:
-  name: 'bs17k' #['numinamath', 'bs17k']
-  batch_size: 1
+  name: 'bs17k'
+  batch_size: 2
   max_length: *seq_len
