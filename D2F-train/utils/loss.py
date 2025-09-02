@@ -52,8 +52,12 @@ def compute_loss(
     noisy_batch[prompt_mask] = input_ids[prompt_mask]
     # prompt_mask = prompt_mask.to(torch.int64)
     noisy_batch = noisy_batch.to(denoiser.device)
+    
+    # Get model dtype to ensure attention mask matches
+    model_dtype = next(denoiser.parameters()).dtype
+    
     attention_mask=build_custom_float_attention_mask(noisy_batch, question_length, block_size, device=noisy_batch.device)
-    attention_mask=attention_mask.to(torch.float16)
+    attention_mask=attention_mask.to(model_dtype)  # Match model dtype instead of hardcoding float16
     logits=denoiser(noisy_batch,attention_mask=attention_mask).logits
     logits=shift_logits(logits)
     if self_align:
@@ -63,7 +67,7 @@ def compute_loss(
             # ref_model.eval()
             # print(type(ref_model))
                 # denoiser.eval()
-                ref_logits=denoiser(noisy_batch,attention_mask=torch.zeros([1,1,noisy_batch.shape[1],noisy_batch.shape[1]],dtype=torch.float16,device=denoiser.device)).logits
+                ref_logits=denoiser(noisy_batch,attention_mask=torch.zeros([1,1,noisy_batch.shape[1],noisy_batch.shape[1]],dtype=model_dtype,device=denoiser.device)).logits
                 ref_logits=shift_logits(ref_logits)
                 ref_logits = torch.nn.functional.softmax(ref_logits, dim=-1)
                 # denoiser.train()
@@ -129,8 +133,12 @@ def compute_llada_loss(
     # prompt_mask = prompt_mask.to(torch.int64)
     noisy_batch = noisy_batch.to(denoiser.device)
     # print(noisy_batch)
+    
+    # Get model dtype to ensure attention mask matches (for LLaDA)
+    model_dtype = next(denoiser.parameters()).dtype
+    
     attention_mask=build_custom_float_attention_mask(noisy_batch, question_length, block_size, device=noisy_batch.device)
-    attention_mask=attention_mask.to(torch.float16)
+    attention_mask=attention_mask.to(model_dtype)  # Match model dtype instead of hardcoding float16
     # print(type(denoiser),noisy_batch.shape,attention_mask.shape)
     logits=denoiser(noisy_batch,attention_bias=attention_mask).logits
     # logits=shift_logits(logits)
@@ -140,7 +148,7 @@ def compute_llada_loss(
                 # ref_model = denoiser
             # ref_model.eval()
             # print(type(ref_model))
-                ref_logits=denoiser(noisy_batch,attention_bias=torch.zeros([1,1,noisy_batch.shape[1],noisy_batch.shape[1]],dtype=torch.float16,device=denoiser.device)).logits
+                ref_logits=denoiser(noisy_batch,attention_bias=torch.zeros([1,1,noisy_batch.shape[1],noisy_batch.shape[1]],dtype=model_dtype,device=denoiser.device)).logits
                 # ref_logits=shift_logits(ref_logits)
                 ref_logits = torch.nn.functional.softmax(ref_logits, dim=-1)
         token_loss_2 = F.cross_entropy(logits[masked_indices], ref_logits[masked_indices], reduction='none') / p_mask[masked_indices]

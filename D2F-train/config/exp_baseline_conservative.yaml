@@ -1,5 +1,5 @@
-# Experiment: Baseline (Original Dream Model)
-# This serves as the baseline for all ablation studies
+# Experiment: Conservative Baseline (Original Dream Model)
+# Ultra-conservative settings for debugging
 
 # Training mode configuration
 training_mode: 'dream'
@@ -21,7 +21,7 @@ denoiser:
     wiinit: true
     name: 'eagle_rope'
     num_blocks: 1
-    seq_len: &seq_len 512
+    seq_len: &seq_len 128        # Much smaller sequence length for debugging
     input_dim: 3584
     hidden_dim: &dim 3584
     vocab_size: 152064
@@ -35,28 +35,28 @@ train:
   head_resume_path:
   skipped_keys:
   global_step:
-  exp_name: &exp_name 'baseline_original_dream'
+  exp_name: &exp_name 'baseline_conservative_debug'
   wandb_proj: 'ablation_study'
-  output_dir: 'baseline_original_dream'
+  output_dir: 'baseline_conservative_debug'
   logging_dir: 'logs'
   mixed_precision: 'bf16'
-  gradient_accumulation_steps: 8    # Increased for memory efficiency
-  report_to: 'wandb'
-  block_size: 16 
+  gradient_accumulation_steps: 16   # Higher accumulation
+  report_to: 'no'                   # Disable wandb for debugging
+  block_size: 8                     # Smaller block size
   
   lr: 5e-6
-  num_iters: 50000
-  eval_every: 2000              # Less frequent evaluation to save memory
-  save_every: 4000              # Less frequent saves
+  num_iters: 1000                   # Shorter run for testing
+  eval_every: 500                   # Less frequent evaluation
+  save_every: 500                   # Frequent saves for debugging
 
   # Standard training (no D2F components)
-  enable_shift: false           # Disable logit shifting
-  share_steps: 1               # Single step training
-  self_align: false            # No asymmetric distillation
+  enable_shift: false               # Disable logit shifting
+  share_steps: 2                   # Use 2 steps (required for loss function)
+  self_align: false                # No asymmetric distillation
   feature_align: false
   self_step: false
 
 data:
   name: 'bs17k'
-  batch_size: 1                 # Reduced batch size for memory
+  batch_size: 1                     # Minimal batch size
   max_length: *seq_len

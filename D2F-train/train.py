@@ -117,12 +117,17 @@ def main(args):
                     config        = config
                 )
                 
+                # Extract loss from the returned dictionary
+                # The loss function always returns a dict with 'loss' key
+                loss_tgt = losses['loss']
+                
+                # Optional: Handle multi-step training differently if needed
                 if config.train.share_steps > 1:
-                    loss_tgt = losses['loss']
-                    # loss_1 = losses['loss_1']
-                    # loss_2 = losses['loss_2']
+                    # Multi-step training (D2F training)
+                    pass  # loss_tgt is already set
                 else:
-                    raise NotImplementedError
+                    # Single-step training (baseline training)
+                    pass  # loss_tgt is already set
                 torch.cuda.empty_cache()
                 accelerator.backward(loss_tgt)
                 if accelerator.sync_gradients:

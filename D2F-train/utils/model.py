@@ -19,7 +19,24 @@ def get_model(config):
     # Use path from config, use default path if no config
     model_path = config.paths.model if hasattr(config, 'paths') and hasattr(config.paths, 'model') else "/home/wx/data/model/Dream-org/Dream-v0-Base-7B"
     
-    model = AutoModel.from_pretrained(model_path, trust_remote_code=True)
+    # Memory-optimized model loading for large models
+    import torch
+    
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        device_map = {"": 0}  # Force to GPU 0 if available
+        print("Loading model on GPU...")
+    else:
+        device_map = "cpu"    # Fallback to CPU for debugging
+        print("Loading model on CPU (no GPU available)...")
+    
+    model = AutoModel.from_pretrained(
+        model_path, 
+        trust_remote_code=True,
+        torch_dtype=torch.bfloat16,  # Use bfloat16 to save memory
+        low_cpu_mem_usage=True,       # Enable low CPU memory usage
+        device_map=device_map         # Adaptive device mapping
+    )
     # print(model.named_modules())
     # print(model,"model
     for param in model.parameters():
@@ -34,8 +51,25 @@ def get_llada(config):
     # Use path from config, use default path if no config
     model_path = config.paths.model if hasattr(config, 'paths') and hasattr(config.paths, 'model') else "/data1/xck/models/llada-8b-instruct"
     
+    # Memory-optimized loading for LLaDA
+    import torch
+    
+    # Check if CUDA is available for LLaDA too
+    if torch.cuda.is_available():
+        device_map = {"": 0}  # Force to GPU 0 if available
+        print("Loading LLaDA model on GPU...")
+    else:
+        device_map = "cpu"    # Fallback to CPU for debugging
+        print("Loading LLaDA model on CPU (no GPU available)...")
+    
     config_obj=LLaDAConfig.from_pretrained(model_path)
-    model = LLaDAModelLM.from_pretrained(model_path,config=config_obj)
+    model = LLaDAModelLM.from_pretrained(
+        model_path,
+        config=config_obj,
+        torch_dtype=torch.bfloat16,  # Use bfloat16 to save memory
+        low_cpu_mem_usage=True,       # Enable low CPU memory usage
+        device_map=device_map         # Adaptive device mapping
+    )
     # print(model.named_modules())
     # print(model,"model
     # print(model)
